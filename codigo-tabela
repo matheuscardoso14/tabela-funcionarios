@@ -1,0 +1,167 @@
+let
+//Realiza a carga dos dados do arquivo .csv com o uso de uma função para definir o caminho e nome do arquivo.
+    #"Carga" =
+        (path as text, filename as text) =>
+            Csv.Document(
+                File.Contents(
+                    path & "\" & filename
+                ),
+            [
+                Delimiter = ";",
+                Encoding = TextEncoding.Windows
+            ]
+            ),
+ 
+//Fornece os parâmetros da função para realizar a carga dos dados.
+    #"Arquivo" =
+        #"Carga"(
+        "C:\Users\Matheus\Documents\Recolhimentos",
+        "Maio_2024.csv"
+        ),
+
+//Filtra as linhas em três informações: matrícula atribuída ao trabalhador, valor da base de cálculo e valor da contribuição do segurado.
+    #"Linhas Filtradas" = 
+        Table.SelectRows(
+            #"Arquivo",
+            each ([Column1] = "Matrícula atribuída ao trabalhador:" or [Column1] = "Valor da base de cálculo:" or [Column1] = "Valor da contribuição do segurado:")
+        ),
+
+//Gera uma lista de listas contendo os dados.
+    #"Lista Dados" =
+        let
+        //Cria uma lista com base nos dados da segunda coluna da tabela original.
+            #"Lista Primária" =
+                List.Buffer(
+                    #"Linhas Filtradas"[Column2]
+                ),
+            
+        //Gera uma lista de listas com base na lista criada na etapa anterior. Cada lista contém três valores relacionados às informações descritas na etapa "#Linhas Filtradas".
+            #"Lista Gerada" =
+                List.Generate(
+                    () => 0,
+                    each _ < List.Count(#"Lista Primária"),
+                    each _ + 3,
+                    each List.Range(
+                        #"Lista Primária", _, 3
+                        )
+                )
+        in
+            #"Lista Gerada",
+
+//Cria uma tabela com base na lista de listas gerada na etapa anterior.
+    #"Tabela" =
+        let
+        //Cria a tabela definindo o tipo de dado de cada coluna.
+            #"Tabela Criada" =
+                #table(
+                    type table
+                    [
+                        Funcionário = text,
+                        Base = text,
+                        Contribuição = text
+                    ],
+                    #"Lista Dados"
+                ),
+
+        //Remove a última linha da tabela. Tal linha estava com um erro devido à falta de informações na base de dados e teve que ser removida.
+            #"Última Linha Removida" =
+                Table.RemoveLastN(
+                    #"Tabela Criada",
+                    1
+                ),
+
+        //Remove as linhas afetadas pelo erro citado na etapa anterior.
+            #"Remover Linhas Erradas" =
+                let
+                    #"Selecionar Coluna" =
+                        Table.SelectColumns(
+                            #"Última Linha Removida",
+                            {"Funcionário"}
+                        ),
+
+                    #"Converter em Lista" =
+                        Table.ToList(
+                            #"Selecionar Coluna"
+                        ),
+
+                    #"Selecionar Linhas" =
+                        List.Select(
+                            #"Converter em Lista",
+                            each Text.Contains(_, ".")
+                        ),
+                    
+                    #"Contagem de Linhas Erradas" =
+                        let
+                            #"Contagem" =
+                                List.Count(
+                                    #"Selecionar Linhas"
+                                )
+                        in
+                            #"Contagem",
+
+                    #"Linhas Removidas" =
+                        Table.RemoveLastN(
+                            #"Tabela Criada",
+                            #"Contagem de Linhas Erradas"
+                        )
+                in
+                    #"Linhas Removidas"
+        in
+            #"Remover Linhas Erradas",
+
+    //Substitui os pontos (".") contidos nos valores das colunas 'Base' e 'Contribuição' por vírgulas (",") para que a conversão da coluna - que era do tipo texto - para o tipo moeda seja possível.
+        #"Substituir Valores" =
+            let
+                #"Base e Contribuição" =
+                    Table.ReplaceValue(
+                        Table.ReplaceValue(
+                            #"Tabela",
+                            ".",
+                            ",",
+                            Replacer.ReplaceText,
+                            {"Base", "Contribuição"}
+                        ),
+                        ";",
+                        "",
+                        Replacer.ReplaceText,
+                        Table.ColumnNames(#"Tabela")
+                    )
+            in
+                #"Base e Contribuição",
+        
+    //Altera o tipo das colunas 'Base' e 'Contribuição' para o tipo moeda.
+        #"Tipo Alterado" =
+            let
+                #"Base e Contribuição" =
+                    Table.TransformColumnTypes(
+                        #"Substituir Valores",
+                        {
+                            {"Base", Currency.Type},
+                            {"Contribuição", Currency.Type}
+                        }
+                    )
+            in
+                #"Base e Contribuição",
+        
+    //Divide a coluna 'Funcionário' em duas colunas: Matrícula e Nome.
+        #"Dividir Coluna" =
+            Table.SplitColumn(
+                #"Tipo Alterado",
+                "Funcionário",
+                Splitter.SplitTextByDelimiter(" - "),
+                {
+                    "Matrícula", "Nome"
+                }
+            ),
+
+    //Classifica a coluna 'Matrícula' em ordem crescente.
+        #"Classificar por Matrícula" =
+            Table.Sort(
+                #"Dividir Coluna",
+                {
+                    "Matrícula",
+                    Order.Ascending
+                }  
+            )
+in
+    #"Classificar por Matrícula"
