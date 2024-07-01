@@ -91,13 +91,9 @@ let
                         ),
                     
                     #"Contagem de Linhas Erradas" =
-                        let
-                            #"Contagem" =
-                                List.Count(
-                                    #"Selecionar Linhas"
-                                )
-                        in
-                            #"Contagem",
+                        List.Count(
+                            #"Selecionar Linhas"
+                        ),
 
                     #"Linhas Removidas" =
                         Table.RemoveLastN(
@@ -131,17 +127,13 @@ let
         
     //Altera o tipo das colunas 'Base' e 'Contribuição' para o tipo moeda.
         #"Tipo Alterado" =
-            let
-                #"Base e Contribuição" =
-                    Table.TransformColumnTypes(
-                        #"Substituir Valores",
-                        {
-                            {"Base", Currency.Type},
-                            {"Contribuição", Currency.Type}
-                        }
-                    )
-            in
-                #"Base e Contribuição",
+            Table.TransformColumnTypes(
+                #"Substituir Valores",
+                {
+                    {"Base", Currency.Type},
+                    {"Contribuição", Currency.Type}
+                }
+            ),
         
     //Divide a coluna 'Funcionário' em duas colunas: Matrícula e Nome.
         #"Dividir Coluna" =
