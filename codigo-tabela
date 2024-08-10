@@ -30,7 +30,7 @@ let
     #"Lista Dados" =
         let
         //Cria uma lista com base nos dados da segunda coluna da tabela original.
-            #"Lista Primária" =
+            #"Lista Primaria" =
                 List.Buffer(
                     #"Linhas Filtradas"[Column2]
                 ),
@@ -39,10 +39,10 @@ let
             #"Lista Gerada" =
                 List.Generate(
                     () => 0,
-                    each _ < List.Count(#"Lista Primária"),
+                    each _ < List.Count(#"Lista Primaria"),
                     each _ + 3,
                     each List.Range(
-                        #"Lista Primária", _, 3
+                        #"Lista Primaria", _, 3
                         )
                 )
         in
@@ -64,7 +64,7 @@ let
                 ),
 
         //Remove a última linha da tabela. Tal linha estava com um erro devido à falta de informações na base de dados e teve que ser removida.
-            #"Última Linha Removida" =
+            #"Ultima Linha Removida" =
                 Table.RemoveLastN(
                     #"Tabela Criada",
                     1
@@ -75,7 +75,7 @@ let
                 let
                     #"Selecionar Coluna" =
                         Table.SelectColumns(
-                            #"Última Linha Removida",
+                            #"Ultima Linha Removida",
                             {"Funcionário"}
                         ),
 
@@ -108,7 +108,7 @@ let
     //Substitui os pontos (".") contidos nos valores das colunas 'Base' e 'Contribuição' por vírgulas (",") para que a conversão da coluna - que era do tipo texto - para o tipo moeda seja possível.
         #"Substituir Valores" =
             let
-                #"Base e Contribuição" =
+                #"Base e Contribuicao" =
                     Table.ReplaceValue(
                         Table.ReplaceValue(
                             #"Tabela",
@@ -123,7 +123,7 @@ let
                         Table.ColumnNames(#"Tabela")
                     )
             in
-                #"Base e Contribuição",
+                #"Base e Contribuicao",
         
     //Altera o tipo das colunas 'Base' e 'Contribuição' para o tipo moeda.
         #"Tipo Alterado" =
@@ -147,7 +147,7 @@ let
             ),
 
     //Classifica a coluna 'Matrícula' em ordem crescente.
-        #"Classificar por Matrícula" =
+        #"Classificar por Matricula" =
             Table.Sort(
                 #"Dividir Coluna",
                 {
@@ -156,4 +156,4 @@ let
                 }  
             )
 in
-    #"Classificar por Matrícula"
+    #"Classificar por Matricula"
